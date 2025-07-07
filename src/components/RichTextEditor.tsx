@@ -7,7 +7,7 @@ import EditorToolbar from './EditorToolbar';
 
 const RichTextEditor: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { content } = useAppSelector((state) => state.editor);
+  const { content, fontFamily } = useAppSelector((state) => state.editor);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const executeCommand = useCallback((command: string, value?: string) => {
@@ -71,6 +71,7 @@ const RichTextEditor: React.FC = () => {
         ref={editorRef}
         contentEditable
         className="p-4 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        style={{ fontFamily }}
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning={true}
