@@ -2,13 +2,12 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
-import { setContent, setDimensions } from '../store/editorSlice';
+import { setContent } from '../store/editorSlice';
 import EditorToolbar from './EditorToolbar';
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Underline } from 'lucide-react';
 
 const RichTextEditor: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { content, width, height } = useAppSelector((state) => state.editor);
+  const { content } = useAppSelector((state) => state.editor);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const executeCommand = useCallback((command: string, value?: string) => {
@@ -43,9 +42,14 @@ const RichTextEditor: React.FC = () => {
     }
   }, [executeCommand]);
 
-  const resizeEditor = useCallback((newWidth: number, newHeight: number) => {
-    dispatch(setDimensions({ width: newWidth, height: newHeight }));
-  }, [dispatch]);
+  const handleImageUpload = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = `<img src="${e.target?.result}" style="max-width: 100%; height: auto;" />`;
+      executeCommand('insertHTML', img);
+    };
+    reader.readAsDataURL(file);
+  }, [executeCommand]);
 
   useEffect(() => {
     if (editorRef.current && content !== editorRef.current.innerHTML) {
@@ -53,23 +57,23 @@ const RichTextEditor: React.FC = () => {
     }
   }, [content]);
 
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (editor && editor.innerHTML.trim() === '') {
+      editor.innerHTML = '<p>Start typing...</p>';
+    }
+  }, []);
+
   return (
-    <div className="rich-text-editor border border-gray-300 rounded-lg overflow-hidden bg-white">
-      <EditorToolbar onCommand={executeCommand} onResize={resizeEditor} />
+    <div className="rich-text-editor border border-gray-300 rounded-lg overflow-hidden bg-white max-w-4xl mx-auto">
+      <EditorToolbar onCommand={executeCommand} onImageUpload={handleImageUpload} />
       <div
         ref={editorRef}
         contentEditable
-        className="editor-content p-4 outline-none min-h-96 text-gray-800 leading-relaxed"
-        style={{ 
-          width: `${width}px`,
-          height: `${height}px`,
-          resize: 'both',
-          overflow: 'auto'
-        }}
+        className="editor-content p-4 outline-none min-h-96 text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning={true}
-        placeholder="Start typing..."
       />
     </div>
   );
