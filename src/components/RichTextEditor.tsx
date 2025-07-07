@@ -11,7 +11,25 @@ const RichTextEditor: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   const executeCommand = useCallback((command: string, value?: string) => {
-    document.execCommand(command, false, value);
+    // For list commands, check if we have selected text
+    if (command === 'insertOrderedList' || command === 'insertUnorderedList') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (!range.collapsed) {
+          // We have selected text, apply list to it
+          document.execCommand(command, false, value);
+        } else {
+          // No selection, create a new list item
+          document.execCommand(command, false, value);
+        }
+      } else {
+        document.execCommand(command, false, value);
+      }
+    } else {
+      document.execCommand(command, false, value);
+    }
+    
     if (editorRef.current) {
       dispatch(setContent(editorRef.current.innerHTML));
     }
@@ -45,11 +63,21 @@ const RichTextEditor: React.FC = () => {
   const handleImageUpload = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = `<img src="${e.target?.result}" style="max-width: 100%; height: auto;" />`;
+      const img = `<img src="${e.target?.result}" style="max-width: 300px; cursor: move; resize: both; overflow: auto;" draggable="true" class="resizable-image" alt="Uploaded image" />`;
       executeCommand('insertHTML', img);
     };
     reader.readAsDataURL(file);
   }, [executeCommand]);
+
+  // Handle image drag and drop within editor
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    // This will be handled by the browser's default drag behavior for images
+  }, []);
 
   useEffect(() => {
     if (editorRef.current && content !== editorRef.current.innerHTML) {
@@ -60,20 +88,45 @@ const RichTextEditor: React.FC = () => {
   useEffect(() => {
     const editor = editorRef.current;
     if (editor && editor.innerHTML.trim() === '') {
-      editor.innerHTML = '<p>Start typing...</p>';
+      editor.innerHTML = '<p>Start typing your content here...</p>';
     }
+
+    // Add CSS for resizable images
+    const style = document.createElement('style');
+    style.textContent = `
+      .resizable-image {
+        resize: both;
+        overflow: auto;
+        border: 2px dashed transparent;
+        transition: border-color 0.2s;
+      }
+      .resizable-image:hover {
+        border-color: #3b82f6;
+      }
+      .resizable-image:focus {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto border border-gray-300 rounded-lg bg-white">
+    <div className="w-full border border-gray-300 rounded-lg bg-white shadow-sm">
       <EditorToolbar onCommand={executeCommand} onImageUpload={handleImageUpload} />
       <div
         ref={editorRef}
         contentEditable
-        className="p-4 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        className="p-6 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         style={{ fontFamily }}
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         suppressContentEditableWarning={true}
       />
     </div>
