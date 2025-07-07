@@ -65,12 +65,12 @@ const RichTextEditor: React.FC = () => {
   }, []);
 
   return (
-    <div className="rich-text-editor border border-gray-300 rounded-lg overflow-hidden bg-white max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto border border-gray-300 rounded-lg bg-white">
       <EditorToolbar onCommand={executeCommand} onImageUpload={handleImageUpload} />
       <div
         ref={editorRef}
         contentEditable
-        className="editor-content p-4 outline-none min-h-96 text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        className="p-4 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}
         suppressContentEditableWarning={true}

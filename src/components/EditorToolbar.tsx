@@ -55,14 +55,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
   };
 
   return (
-    <div className="toolbar bg-gray-50 border-b border-gray-300 p-3 flex items-center gap-2 flex-wrap">
+    <div className="bg-gray-50 border-b border-gray-300 p-3 flex items-center gap-2 flex-wrap">
       {/* Basic Formatting */}
       <div className="flex items-center gap-1">
         {toolbarButtons.map(({ command, icon: Icon, label }) => (
           <button
             key={command}
             onClick={() => onCommand(command)}
-            className="toolbar-btn p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+            className="p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center border border-transparent hover:border-gray-300"
             title={label}
             type="button"
           >
@@ -71,12 +71,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
         ))}
       </div>
 
-      <div className="separator w-px h-6 bg-gray-300" />
+      <div className="w-px h-6 bg-gray-300" />
 
       {/* Font Size */}
       <select
         onChange={(e) => handleFontSize(e.target.value)}
-        className="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="text-sm px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         defaultValue="3"
       >
         <option value="1">8pt</option>
@@ -92,11 +92,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
       <input
         type="color"
         onChange={(e) => handleTextColor(e.target.value)}
-        className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+        className="w-8 h-8 border border-gray-300 rounded cursor-pointer bg-white"
         title="Text Color"
       />
 
-      <div className="separator w-px h-6 bg-gray-300" />
+      <div className="w-px h-6 bg-gray-300" />
 
       {/* Alignment */}
       <div className="flex items-center gap-1">
@@ -104,7 +104,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
           <button
             key={command}
             onClick={() => onCommand(command)}
-            className="toolbar-btn p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+            className="p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center border border-transparent hover:border-gray-300"
             title={label}
             type="button"
           >
@@ -113,7 +113,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
         ))}
       </div>
 
-      <div className="separator w-px h-6 bg-gray-300" />
+      <div className="w-px h-6 bg-gray-300" />
 
       {/* Lists */}
       <div className="flex items-center gap-1">
@@ -121,7 +121,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
           <button
             key={command}
             onClick={() => onCommand(command)}
-            className="toolbar-btn p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+            className="p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center border border-transparent hover:border-gray-300"
             title={label}
             type="button"
           >
@@ -130,12 +130,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
         ))}
       </div>
 
-      <div className="separator w-px h-6 bg-gray-300" />
+      <div className="w-px h-6 bg-gray-300" />
 
       {/* Link and Image */}
       <button
         onClick={handleLink}
-        className="toolbar-btn p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+        className="p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center border border-transparent hover:border-gray-300"
         title="Insert Link"
         type="button"
       >
@@ -144,7 +144,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand, onImageUpload 
 
       <button
         onClick={handleImageClick}
-        className="toolbar-btn p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center"
+        className="p-2 rounded hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center border border-transparent hover:border-gray-300"
         title="Insert Image"
         type="button"
       >
