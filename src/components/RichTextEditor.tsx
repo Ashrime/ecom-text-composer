@@ -11,15 +11,12 @@ const RichTextEditor: React.FC = () => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   const executeCommand = useCallback((command: string, value?: string) => {
-    // Focus the editor first
     if (editorRef.current) {
       editorRef.current.focus();
     }
 
-    // Execute the command
     document.execCommand(command, false, value);
     
-    // Update content in store
     if (editorRef.current) {
       dispatch(setContent(editorRef.current.innerHTML));
     }
@@ -46,6 +43,16 @@ const RichTextEditor: React.FC = () => {
           e.preventDefault();
           executeCommand('underline');
           break;
+        case 'z':
+          if (!e.shiftKey) {
+            e.preventDefault();
+            executeCommand('undo');
+          }
+          break;
+        case 'y':
+          e.preventDefault();
+          executeCommand('redo');
+          break;
       }
     }
   }, [executeCommand]);
@@ -62,64 +69,100 @@ const RichTextEditor: React.FC = () => {
       editor.innerHTML = '<p>Start typing your content here...</p>';
     }
 
-    // Add CSS for better list styling
+    // Enhanced CSS for better styling
     const style = document.createElement('style');
     style.textContent = `
       .rich-text-editor ul {
-        list-style-type: disc;
-        padding-left: 40px;
+        list-style-position: outside;
+        padding-left: 30px;
         margin: 10px 0;
       }
       .rich-text-editor ol {
-        list-style-type: decimal;
-        padding-left: 40px;
+        list-style-position: outside;
+        padding-left: 30px;
         margin: 10px 0;
       }
-      .rich-text-editor ul li {
+      .rich-text-editor li {
         margin: 5px 0;
-        list-style-type: disc;
+        line-height: 1.5;
       }
-      .rich-text-editor ol li {
-        margin: 5px 0;
-        list-style-type: inherit;
+      .rich-text-editor li[data-bullet]::before {
+        content: attr(data-bullet);
+        margin-left: -20px;
+        margin-right: 8px;
+        color: #4F46E5;
+        font-weight: bold;
       }
       .rich-text-editor ul ul {
         list-style-type: circle;
         margin: 5px 0;
+        padding-left: 25px;
       }
       .rich-text-editor ol ol {
         list-style-type: lower-alpha;
         margin: 5px 0;
+        padding-left: 25px;
       }
       .rich-text-editor h1 {
-        font-size: 2em;
+        font-size: 2.25em;
         font-weight: bold;
-        margin: 16px 0;
+        margin: 20px 0 16px 0;
+        line-height: 1.2;
+        color: #1F2937;
       }
       .rich-text-editor h2 {
-        font-size: 1.5em;
+        font-size: 1.875em;
         font-weight: bold;
-        margin: 14px 0;
+        margin: 18px 0 14px 0;
+        line-height: 1.3;
+        color: #1F2937;
       }
       .rich-text-editor h3 {
-        font-size: 1.17em;
+        font-size: 1.5em;
         font-weight: bold;
-        margin: 12px 0;
+        margin: 16px 0 12px 0;
+        line-height: 1.4;
+        color: #1F2937;
       }
       .rich-text-editor h4 {
-        font-size: 1em;
+        font-size: 1.25em;
         font-weight: bold;
-        margin: 10px 0;
+        margin: 14px 0 10px 0;
+        line-height: 1.4;
+        color: #1F2937;
       }
       .rich-text-editor p {
-        margin: 8px 0;
+        margin: 10px 0;
+        line-height: 1.6;
       }
       .rich-text-editor a {
         color: #2563eb;
         text-decoration: underline;
+        transition: color 0.2s;
       }
       .rich-text-editor a:hover {
         color: #1d4ed8;
+      }
+      .rich-text-editor blockquote {
+        border-left: 4px solid #E5E7EB;
+        margin: 16px 0;
+        padding-left: 16px;
+        font-style: italic;
+        color: #6B7280;
+      }
+      .rich-text-editor code {
+        background-color: #F3F4F6;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+      }
+      .rich-text-editor pre {
+        background-color: #F3F4F6;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 12px 0;
       }
     `;
     document.head.appendChild(style);
@@ -129,15 +172,9 @@ const RichTextEditor: React.FC = () => {
     };
   }, []);
 
-  // Dummy handler for image upload (not used anymore)
-  const handleImageUpload = useCallback((file: File) => {
-    // This is now a dummy function since we removed image upload
-    console.log('Image upload not supported');
-  }, []);
-
   return (
     <div className="w-full border border-gray-300 rounded-lg bg-white shadow-sm">
-      <EditorToolbar onCommand={executeCommand} onImageUpload={handleImageUpload} />
+      <EditorToolbar onCommand={executeCommand} />
       <div
         ref={editorRef}
         contentEditable
