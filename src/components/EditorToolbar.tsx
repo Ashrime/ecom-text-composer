@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Undo, Redo, Link, Upload, Eye } from 'lucide-react';
+import { Undo, Redo, Link, Upload } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { setFontFamily } from '../store/editorSlice';
 import FormatButtons from './toolbar/FormatButtons';
@@ -9,7 +9,6 @@ import ListButtons from './toolbar/ListButtons';
 import ColorTools from './toolbar/ColorTools';
 import ImportModal from './ImportModal';
 import LinkDialog from './LinkDialog';
-import HTMLPreviewDialog from './toolbar/HTMLPreviewDialog';
 
 interface EditorToolbarProps {
   onCommand: (command: string, value?: string) => void;
@@ -17,10 +16,9 @@ interface EditorToolbarProps {
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const dispatch = useAppDispatch();
-  const { content, fontFamily } = useAppSelector((state) => state.editor);
+  const { fontFamily } = useAppSelector((state) => state.editor);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [showHTMLPreview, setShowHTMLPreview] = useState(false);
 
   const handleHeading = (level: string) => {
     const selection = window.getSelection();
@@ -32,11 +30,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
       document.execCommand('formatBlock', false, `h${level}`);
     }
     
-    // Update content in store
-    const editorElement = document.querySelector('.rich-text-editor');
-    if (editorElement) {
-      dispatch({ type: 'editor/setContent', payload: editorElement.innerHTML });
-    }
+    // Trigger content update
+    setTimeout(() => {
+      const editorElement = document.querySelector('.rich-text-editor');
+      if (editorElement) {
+        const event = new Event('input', { bubbles: true });
+        editorElement.dispatchEvent(event);
+      }
+    }, 10);
   };
 
   const handleFontSize = (size: string) => {
@@ -52,12 +53,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
     <>
       <div className="bg-white border-b border-gray-300 px-4 py-3 shadow-sm">
         {/* First Row - Main formatting tools */}
-        <div className="flex items-center justify-between w-full gap-3 mb-3">
+        <div className="flex items-center justify-between w-full gap-4 mb-3">
           {/* Left Section - Headings and Font */}
           <div className="flex items-center gap-3">
             <select
               onChange={(e) => handleHeading(e.target.value)}
-              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[100px]"
+              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[110px]"
               defaultValue=""
             >
               <option value="">Normal</option>
@@ -65,12 +66,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
               <option value="2">Heading 2</option>
               <option value="3">Heading 3</option>
               <option value="4">Heading 4</option>
+              <option value="5">Heading 5</option>
+              <option value="6">Heading 6</option>
             </select>
 
             <select
               value={fontFamily}
               onChange={(e) => handleFontFamily(e.target.value)}
-              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[120px]"
+              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[130px]"
             >
               <option value="Arial">Arial</option>
               <option value="Times New Roman">Times New Roman</option>
@@ -98,7 +101,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           </div>
 
           {/* Center Section - Format Tools */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <FormatButtons onCommand={onCommand} />
             
             <div className="h-5 w-px bg-gray-300" />
@@ -111,7 +114,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           </div>
 
           {/* Right Section - Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowLinkDialog(true)}
               className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
@@ -129,20 +132,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
             >
               <Upload size={14} className="text-gray-700" />
             </button>
-
-            <button
-              onClick={() => setShowHTMLPreview(true)}
-              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
-              title="HTML Preview"
-              type="button"
-            >
-              <Eye size={14} className="text-gray-700" />
-            </button>
           </div>
         </div>
 
         {/* Second Row - Alignment and Undo/Redo */}
-        <div className="flex items-center justify-between w-full gap-3">
+        <div className="flex items-center justify-between w-full gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={() => onCommand('undo')}
@@ -201,12 +195,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         onImport={(content) => {
           onCommand('insertHTML', content);
         }}
-      />
-
-      <HTMLPreviewDialog
-        isOpen={showHTMLPreview}
-        onClose={() => setShowHTMLPreview(false)}
-        htmlContent={content}
       />
     </>
   );

@@ -1,6 +1,6 @@
-
 import React, { useState, useCallback } from 'react';
 import { X, Upload, FileText, AlertCircle } from 'lucide-react';
+import mammoth from 'mammoth';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -15,7 +15,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
 
   // Sanitize HTML content to prevent XSS attacks
   const sanitizeHtml = (html: string): string => {
-    // Create a temporary div to parse HTML
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
@@ -50,7 +49,19 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
     return tempDiv.innerHTML;
   };
 
-  // Convert Word content to clean HTML
+  // Convert Word content to clean HTML using mammoth.js
+  const processDocxFile = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    
+    if (result.messages.length > 0) {
+      console.warn('Mammoth conversion warnings:', result.messages);
+    }
+    
+    return result.value;
+  };
+
+  // Convert Word HTML content to clean HTML
   const processWordContent = (content: string): string => {
     // Remove Word-specific XML and metadata
     let cleanContent = content
@@ -87,23 +98,28 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
     setError(null);
 
     try {
-      const content = await file.text();
       let processedContent = '';
 
       if (file.type.includes('html') || file.name.endsWith('.html')) {
+        const content = await file.text();
         processedContent = sanitizeHtml(content);
-      } else if (file.type.includes('word') || file.name.endsWith('.docx')) {
-        // For DOCX files, we need to extract the HTML content
-        // This is a simplified approach - in production, you might want to use a library like mammoth.js
+      } else if (file.type.includes('wordprocessingml') || file.name.endsWith('.docx')) {
+        // Use mammoth.js for proper DOCX conversion
+        const htmlContent = await processDocxFile(file);
+        processedContent = sanitizeHtml(htmlContent);
+      } else if (file.type.includes('word') || file.name.endsWith('.doc')) {
+        // For older .doc files, try to read as text and convert
+        const content = await file.text();
         processedContent = sanitizeHtml(processWordContent(content));
       } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
         // Convert plain text to HTML paragraphs
+        const content = await file.text();
         processedContent = content
           .split('\n\n')
           .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
           .join('');
       } else {
-        throw new Error('Unsupported file format. Please use HTML, TXT, or Word documents.');
+        throw new Error('Unsupported file format. Please use HTML, TXT, DOC, or DOCX files.');
       }
 
       onImport(processedContent);
@@ -195,9 +211,10 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
               <div className="text-xs text-gray-500 space-y-1">
                 <div className="flex items-center justify-center gap-1">
                   <FileText size={12} />
-                  <span>Supported: HTML, TXT, Word documents</span>
+                  <span>Supported: HTML, TXT, DOC, DOCX</span>
                 </div>
-                <div>Content will be sanitized for security</div>
+                <div>DOCX files converted with Mammoth.js</div>
+                <div>Content sanitized for security</div>
               </div>
             </div>
 
@@ -220,12 +237,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, onImport }) 
         </div>
 
         <div className="mt-4 text-xs text-gray-500">
-          <p className="font-medium mb-1">Security Features:</p>
+          <p className="font-medium mb-1">Security & Conversion Features:</p>
           <ul className="space-y-1 ml-4">
+            <li>• DOCX files properly converted using Mammoth.js</li>
             <li>• Scripts and dangerous elements removed</li>
             <li>• Event handlers sanitized</li>
             <li>• Word formatting cleaned and optimized</li>
-            <li>• Content validated before import</li>
           </ul>
         </div>
       </div>
