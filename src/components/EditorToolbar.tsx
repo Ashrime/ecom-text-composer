@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Undo, Redo, Link, Upload } from 'lucide-react';
+import { Undo, Redo, Link, Upload, Code, Table } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { setFontFamily } from '../store/editorSlice';
 import FormatButtons from './toolbar/FormatButtons';
@@ -9,6 +9,7 @@ import ListButtons from './toolbar/ListButtons';
 import ColorTools from './toolbar/ColorTools';
 import ImportModal from './ImportModal';
 import LinkDialog from './LinkDialog';
+import TableDialog from './TableDialog';
 
 interface EditorToolbarProps {
   onCommand: (command: string, value?: string) => void;
@@ -19,6 +20,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const { fontFamily } = useAppSelector((state) => state.editor);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleHeading = (level: string) => {
     const selection = window.getSelection();
@@ -47,6 +50,26 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const handleFontFamily = (font: string) => {
     dispatch(setFontFamily(font));
     onCommand('fontName', font);
+  };
+
+  const handlePreviewToggle = () => {
+    setShowPreview(!showPreview);
+    const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+    if (editorElement) {
+      if (!showPreview) {
+        // Show HTML
+        const htmlContent = editorElement.innerHTML;
+        editorElement.style.whiteSpace = 'pre-wrap';
+        editorElement.style.fontFamily = 'monospace';
+        editorElement.textContent = htmlContent;
+      } else {
+        // Show rendered content
+        const htmlContent = editorElement.textContent || '';
+        editorElement.style.whiteSpace = '';
+        editorElement.style.fontFamily = fontFamily;
+        editorElement.innerHTML = htmlContent;
+      }
+    }
   };
 
   return (
@@ -125,6 +148,26 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
             </button>
 
             <button
+              onClick={() => setShowTableDialog(true)}
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
+              title="Insert Table"
+              type="button"
+            >
+              <Table size={14} className="text-gray-700" />
+            </button>
+
+            <button
+              onClick={handlePreviewToggle}
+              className={`h-8 w-8 flex items-center justify-center rounded transition-colors border border-transparent hover:border-gray-300 ${
+                showPreview ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+              }`}
+              title="Toggle HTML Preview"
+              type="button"
+            >
+              <Code size={14} />
+            </button>
+
+            <button
               onClick={() => setShowImportModal(true)}
               className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
               title="Import Document"
@@ -169,23 +212,46 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         onInsert={(linkData) => {
           const selection = window.getSelection();
           if (selection && selection.toString()) {
-            onCommand('createLink', linkData.url);
-            if (linkData.title || linkData.openInNewTab) {
-              setTimeout(() => {
-                const links = document.querySelectorAll('a[href="' + linkData.url + '"]');
-                links.forEach(link => {
-                  if (linkData.title) link.setAttribute('title', linkData.title);
-                  if (linkData.openInNewTab) {
-                    link.setAttribute('target', '_blank');
-                    link.setAttribute('rel', 'noopener noreferrer');
-                  }
-                });
-              }, 10);
-            }
+            // Replace selected text with link
+            const selectedText = selection.toString();
+            const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.title || selectedText}</a>`;
+            onCommand('insertHTML', linkHtml);
           } else {
+            // Insert new link
             const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText || linkData.url}</a>`;
             onCommand('insertHTML', linkHtml);
           }
+        }}
+      />
+
+      <TableDialog
+        isOpen={showTableDialog}
+        onClose={() => setShowTableDialog(false)}
+        onInsert={(tableData) => {
+          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+          
+          // Create header if requested
+          if (tableData.hasHeader) {
+            tableHtml += '<thead><tr>';
+            for (let i = 0; i < tableData.cols; i++) {
+              tableHtml += '<th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; font-weight: bold;">Header ' + (i + 1) + '</th>';
+            }
+            tableHtml += '</tr></thead>';
+          }
+          
+          // Create body rows
+          tableHtml += '<tbody>';
+          const startRow = tableData.hasHeader ? 1 : 0;
+          for (let i = startRow; i < tableData.rows; i++) {
+            tableHtml += '<tr>';
+            for (let j = 0; j < tableData.cols; j++) {
+              tableHtml += '<td style="border: 1px solid #ddd; padding: 8px;">Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
+            }
+            tableHtml += '</tr>';
+          }
+          tableHtml += '</tbody></table>';
+          
+          onCommand('insertHTML', tableHtml);
         }}
       />
 

@@ -69,7 +69,7 @@ const RichTextEditor: React.FC = () => {
       editor.innerHTML = '<p>Start typing your content here...</p>';
     }
 
-    // Enhanced CSS for better styling
+    // Enhanced CSS for better styling including tables
     const style = document.createElement('style');
     style.textContent = `
       .rich-text-editor ul {
@@ -85,13 +85,6 @@ const RichTextEditor: React.FC = () => {
       .rich-text-editor li {
         margin: 5px 0;
         line-height: 1.5;
-      }
-      .rich-text-editor li[data-bullet]::before {
-        content: attr(data-bullet);
-        margin-left: -20px;
-        margin-right: 8px;
-        color: #4F46E5;
-        font-weight: bold;
       }
       .rich-text-editor ul ul {
         list-style-type: circle;
@@ -131,6 +124,20 @@ const RichTextEditor: React.FC = () => {
         line-height: 1.4;
         color: #1F2937;
       }
+      .rich-text-editor h5 {
+        font-size: 1.125em;
+        font-weight: bold;
+        margin: 12px 0 8px 0;
+        line-height: 1.4;
+        color: #1F2937;
+      }
+      .rich-text-editor h6 {
+        font-size: 1em;
+        font-weight: bold;
+        margin: 10px 0 6px 0;
+        line-height: 1.4;
+        color: #1F2937;
+      }
       .rich-text-editor p {
         margin: 10px 0;
         line-height: 1.6;
@@ -142,6 +149,28 @@ const RichTextEditor: React.FC = () => {
       }
       .rich-text-editor a:hover {
         color: #1d4ed8;
+      }
+      .rich-text-editor table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 15px 0;
+        font-size: 14px;
+      }
+      .rich-text-editor th,
+      .rich-text-editor td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      .rich-text-editor th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+      }
+      .rich-text-editor tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+      .rich-text-editor tr:hover {
+        background-color: #f5f5f5;
       }
       .rich-text-editor blockquote {
         border-left: 4px solid #E5E7EB;
