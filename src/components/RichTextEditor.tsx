@@ -69,6 +69,26 @@ const RichTextEditor: React.FC = () => {
 
   useEffect(() => {
     const editor = editorRef.current;
+    if (!editor) return;
+
+    function handleLinkClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'A') {
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
+          window.open((target as HTMLAnchorElement).href, '_blank', 'noopener');
+        }
+        e.preventDefault(); // Always prevent default navigation in edit mode
+      }
+    }
+    editor.addEventListener('click', handleLinkClick);
+    return () => {
+      editor.removeEventListener('click', handleLinkClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    const editor = editorRef.current;
     if (editor && editor.innerHTML.trim() === '') {
       editor.innerHTML = '<p>Start typing your content here...</p>';
     }
@@ -211,6 +231,184 @@ const RichTextEditor: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Helper to ensure all table cells are editable
+  const ensureAllCellsEditable = () => {
+    if (editorRef.current) {
+      const cells = editorRef.current.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        cell.setAttribute('contenteditable', 'true');
+      });
+    }
+  };
+
+  const addTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    // Find the row to clone
+    const row = cell.closest('tr');
+    if (row) {
+      const isHeader = row.querySelectorAll('th').length > 0;
+      const cellTag = isHeader ? 'th' : 'td';
+      const numCells = row.children.length;
+      const newRow = document.createElement('tr');
+      for (let i = 0; i < numCells; i++) {
+        const newCell = document.createElement(cellTag);
+        newCell.setAttribute('contenteditable', 'true');
+        newCell.textContent = isHeader ? `Header` : `Cell`;
+        newRow.appendChild(newCell);
+      }
+      row.parentNode?.insertBefore(newRow, row.nextSibling);
+      ensureAllCellsEditable();
+      handleContentChange();
+    }
+  };
+
+  const addTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    // Find the column index
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+      const isHeader = row.querySelectorAll('th').length > 0;
+      const cellTag = isHeader ? 'th' : 'td';
+      const newCell = document.createElement(cellTag);
+      newCell.setAttribute('contenteditable', 'true');
+      newCell.textContent = isHeader ? `Header` : `Cell`;
+      // Insert after the current cell index
+      if (row.children[cellIndex]) {
+        row.insertBefore(newCell, row.children[cellIndex + 1]);
+      } else {
+        row.appendChild(newCell);
+      }
+    });
+    ensureAllCellsEditable();
+    handleContentChange();
+  };
+
+  const deleteTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    const rowIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    if (rows.length > 0) {
+      rows[rowIndex].remove();
+      ensureAllCellsEditable();
+      handleContentChange();
+    }
+  };
+
+  const deleteTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    if (rows.length > 0 && rows[0].children.length > 1) {
+      rows.forEach(row => {
+        if (row.children[cellIndex]) {
+          row.children[cellIndex].remove();
+        }
+      });
+      ensureAllCellsEditable();
+      handleContentChange();
+    }
+  };
+
+  // Enhanced context menu for table cells
+  const showTableContextMenu = (e: MouseEvent, cell: HTMLElement, table: HTMLElement) => {
+    // Remove any existing custom context menu
+    const existingMenu = document.getElementById('custom-table-context-menu');
+    if (existingMenu) existingMenu.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'custom-table-context-menu';
+    menu.className = 'fixed bg-white border border-gray-300 rounded shadow-lg z-50 p-2';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+    menu.style.minWidth = '160px';
+    menu.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+
+    const addRowButton = document.createElement('button');
+    addRowButton.textContent = 'Add Row Below';
+    addRowButton.className = 'block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm';
+    addRowButton.onclick = () => {
+      addTableRow(table, cell);
+      menu.remove();
+    };
+
+    const addColButton = document.createElement('button');
+    addColButton.textContent = 'Add Column Right';
+    addColButton.className = 'block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm';
+    addColButton.onclick = () => {
+      addTableColumn(table, cell);
+      menu.remove();
+    };
+
+    const deleteRowButton = document.createElement('button');
+    deleteRowButton.textContent = 'Delete Row';
+    deleteRowButton.className = 'block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-red-600';
+    deleteRowButton.onclick = () => {
+      deleteTableRow(table, cell);
+      menu.remove();
+    };
+
+    const deleteColButton = document.createElement('button');
+    deleteColButton.textContent = 'Delete Column';
+    deleteColButton.className = 'block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-red-600';
+    deleteColButton.onclick = () => {
+      deleteTableColumn(table, cell);
+      menu.remove();
+    };
+
+    menu.appendChild(addRowButton);
+    menu.appendChild(addColButton);
+    menu.appendChild(deleteRowButton);
+    menu.appendChild(deleteColButton);
+
+    document.body.appendChild(menu);
+
+    // Remove menu when clicking elsewhere
+    const removeMenu = () => {
+      if (document.body.contains(menu)) {
+        menu.remove();
+      }
+      document.removeEventListener('click', removeMenu);
+    };
+    setTimeout(() => document.addEventListener('click', removeMenu), 0);
+  };
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // Handler for table cell right-click
+    function handleCellContextMenu(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'TD' || target.tagName === 'TH') {
+        e.preventDefault();
+        const table = target.closest('table');
+        if (table) {
+          showTableContextMenu(e, target, table as HTMLElement);
+        }
+      }
+    }
+
+    // Attach to all table cells
+    const attachContextMenu = () => {
+      const cells = editor.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        cell.removeEventListener('contextmenu', handleCellContextMenu);
+        cell.addEventListener('contextmenu', handleCellContextMenu);
+      });
+    };
+
+    attachContextMenu();
+
+    // Re-attach after every content change
+    const observer = new MutationObserver(attachContextMenu);
+    observer.observe(editor, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      const cells = editor.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        cell.removeEventListener('contextmenu', handleCellContextMenu);
+      });
+    };
+  }, [content]);
 
   return (
     <div className="w-full max-w-6xl mx-auto border border-gray-300 rounded-lg bg-white shadow-sm">

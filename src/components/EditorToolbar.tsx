@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Undo, Redo, Link, Upload, Code, Table, FileText } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { setFontFamily } from '../store/editorSlice';
@@ -25,6 +25,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const [showTableDialog, setShowTableDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const linkSelectionRef = useRef<Range | null>(null);
 
   const handleHeading = (level: string) => {
     const selection = window.getSelection();
@@ -132,80 +133,51 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
     }, 10);
   };
 
+  // Only handle hyperlink insertion through LinkDialog
   const handleLinkInsert = (linkData: any) => {
-    console.log('Handle link insert called with:', linkData);
-    
-    const selection = window.getSelection();
+    // Restore the saved selection
     const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
-    
-    if (!editorElement) {
-      console.error('Editor element not found');
-      return;
-    }
-
-    editorElement.focus();
-
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const selectedText = selection.toString();
-      
-      console.log('Selected text:', selectedText);
-      
-      if (selectedText) {
-        // Replace selected text with link
-        range.deleteContents();
-        
-        const linkElement = document.createElement('a');
-        linkElement.href = linkData.url;
-        linkElement.textContent = selectedText;
-        
-        if (linkData.title) {
-          linkElement.title = linkData.title;
-        }
-        
-        if (linkData.openInNewTab) {
-          linkElement.target = '_blank';
-          linkElement.rel = 'noopener noreferrer';
-        }
-        
-        // Apply link styling
-        linkElement.style.color = '#2563eb';
-        linkElement.style.textDecoration = 'underline';
-        
-        range.insertNode(linkElement);
-        
-        // Clear selection and position cursor after link
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.setStartAfter(linkElement);
-        newRange.setEndAfter(linkElement);
-        selection.addRange(newRange);
-        
-        console.log('Link inserted successfully');
-      } else {
-        console.log('No text selected, inserting new link');
-        // Insert new link at cursor position
-        const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''} style="color: #2563eb; text-decoration: underline;">${linkData.url}</a>`;
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = linkHtml;
-        const linkElement = tempDiv.firstChild as Node;
-        range.insertNode(linkElement);
-        
-        // Position cursor after link
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.setStartAfter(linkElement);
-        newRange.setEndAfter(linkElement);
-        selection.addRange(newRange);
-      }
-      
-      // Trigger content change event
+    if (linkSelectionRef.current && editorElement) {
+      const selection = window.getSelection();
+      editorElement.focus();
+      selection?.removeAllRanges();
+      selection?.addRange(linkSelectionRef.current);
+      document.execCommand('createLink', false, linkData.url);
       setTimeout(() => {
+        const links = editorElement.querySelectorAll('a[href]');
+        links.forEach(link => {
+          const anchor = link as HTMLAnchorElement;
+          if (anchor.getAttribute('href') === linkData.url && anchor.textContent === linkSelectionRef.current?.toString()) {
+            if (linkData.openInNewTab) {
+              anchor.setAttribute('target', '_blank');
+              anchor.setAttribute('rel', 'noopener noreferrer');
+            } else {
+              anchor.removeAttribute('target');
+              anchor.removeAttribute('rel');
+            }
+            anchor.style.color = '#2563eb';
+            anchor.style.textDecoration = 'underline';
+            if (linkData.title) {
+              anchor.setAttribute('title', linkData.title);
+            }
+          }
+        });
         const event = new Event('input', { bubbles: true });
         editorElement.dispatchEvent(event);
       }, 10);
     }
+    // No else needed: dialog disables submit if no text is selected
+  };
+
+  // When opening the LinkDialog, save the current selection
+  const handleShowLinkDialog = () => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      linkSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    } else {
+      linkSelectionRef.current = null;
+    }
+    setShowLinkDialog(true);
   };
 
   return (
@@ -275,7 +247,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           {/* Right Section - Actions */}
           <div className="flex items-center gap-1 sm:gap-3 flex-wrap">
             <button
-              onClick={() => setShowLinkDialog(true)}
+              onClick={handleShowLinkDialog}
               className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
               title="Insert Link"
               type="button"
