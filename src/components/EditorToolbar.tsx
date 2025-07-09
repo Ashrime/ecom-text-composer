@@ -11,6 +11,7 @@ import ImportModal from './ImportModal';
 import LinkDialog from './LinkDialog';
 import TableDialog from './TableDialog';
 import TemplateDialog from './TemplateDialog';
+import DOMPurify from 'dompurify';
 
 interface EditorToolbarProps {
   onCommand: (command: string, value?: string) => void;
@@ -78,48 +79,99 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   };
 
   const insertAtCursor = (html: string) => {
+    console.log('Inserting content at cursor:', html);
+    
     const selection = window.getSelection();
+    const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+    
+    if (!editorElement) {
+      console.error('Editor element not found');
+      return;
+    }
+
+    // Sanitize the HTML content
+    const sanitizedHtml = DOMPurify.sanitize(html);
+    console.log('Sanitized HTML:', sanitizedHtml);
+
+    // Focus the editor first
+    editorElement.focus();
+
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       range.deleteContents();
       
+      // Create a temporary div to parse the HTML
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      const element = tempDiv.firstChild as Node;
+      tempDiv.innerHTML = sanitizedHtml;
       
-      if (element) {
-        range.insertNode(element);
-        range.setStartAfter(element);
-        range.setEndAfter(element);
-        selection.removeAllRanges();
-        selection.addRange(range);
+      // Insert each child node
+      const fragment = document.createDocumentFragment();
+      while (tempDiv.firstChild) {
+        fragment.appendChild(tempDiv.firstChild);
       }
       
-      setTimeout(() => {
-        const editorElement = document.querySelector('.rich-text-editor');
-        if (editorElement) {
-          const event = new Event('input', { bubbles: true });
-          editorElement.dispatchEvent(event);
-        }
-      }, 10);
+      range.insertNode(fragment);
+      
+      // Move cursor to end of inserted content
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } else {
+      // If no selection, append to end
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = sanitizedHtml;
+      while (tempDiv.firstChild) {
+        editorElement.appendChild(tempDiv.firstChild);
+      }
     }
+    
+    // Trigger content change event
+    setTimeout(() => {
+      const event = new Event('input', { bubbles: true });
+      editorElement.dispatchEvent(event);
+    }, 10);
   };
 
   const handleLinkInsert = (linkData: any) => {
+    console.log('Handle link insert called with:', linkData);
+    
     const selection = window.getSelection();
+    const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+    
+    if (!editorElement) {
+      console.error('Editor element not found');
+      return;
+    }
+
+    editorElement.focus();
+
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       const selectedText = selection.toString();
       
-      // Create the link HTML
-      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText}</a>`;
+      console.log('Selected text:', selectedText);
       
       if (selectedText) {
-        // Replace selected text with link - this is the MS Word behavior
+        // Replace selected text with link
         range.deleteContents();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = linkHtml;
-        const linkElement = tempDiv.firstChild as Node;
+        
+        const linkElement = document.createElement('a');
+        linkElement.href = linkData.url;
+        linkElement.textContent = selectedText;
+        
+        if (linkData.title) {
+          linkElement.title = linkData.title;
+        }
+        
+        if (linkData.openInNewTab) {
+          linkElement.target = '_blank';
+          linkElement.rel = 'noopener noreferrer';
+        }
+        
+        // Apply link styling
+        linkElement.style.color = '#2563eb';
+        linkElement.style.textDecoration = 'underline';
+        
         range.insertNode(linkElement);
         
         // Clear selection and position cursor after link
@@ -128,17 +180,30 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         newRange.setStartAfter(linkElement);
         newRange.setEndAfter(linkElement);
         selection.addRange(newRange);
+        
+        console.log('Link inserted successfully');
       } else {
+        console.log('No text selected, inserting new link');
         // Insert new link at cursor position
-        insertAtCursor(linkHtml);
+        const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''} style="color: #2563eb; text-decoration: underline;">${linkData.url}</a>`;
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = linkHtml;
+        const linkElement = tempDiv.firstChild as Node;
+        range.insertNode(linkElement);
+        
+        // Position cursor after link
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.setStartAfter(linkElement);
+        newRange.setEndAfter(linkElement);
+        selection.addRange(newRange);
       }
       
+      // Trigger content change event
       setTimeout(() => {
-        const editorElement = document.querySelector('.rich-text-editor');
-        if (editorElement) {
-          const event = new Event('input', { bubbles: true });
-          editorElement.dispatchEvent(event);
-        }
+        const event = new Event('input', { bubbles: true });
+        editorElement.dispatchEvent(event);
       }, 10);
     }
   };
@@ -296,12 +361,14 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showTableDialog}
         onClose={() => setShowTableDialog(false)}
         onInsert={(tableData) => {
-          let tableHtml = '<table>';
+          console.log('Table data received:', tableData);
+          
+          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 14px;">';
           
           if (tableData.hasHeader) {
             tableHtml += '<thead><tr>';
             for (let i = 0; i < tableData.cols; i++) {
-              tableHtml += '<th>Header ' + (i + 1) + '</th>';
+              tableHtml += `<th style="border: 1px solid #ddd; padding: 12px 8px; text-align: left; background-color: #f8f9fa; font-weight: bold;">Header ${i + 1}</th>`;
             }
             tableHtml += '</tr></thead>';
           }
@@ -311,12 +378,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           for (let i = startRow; i < tableData.rows; i++) {
             tableHtml += '<tr>';
             for (let j = 0; j < tableData.cols; j++) {
-              tableHtml += '<td>Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
+              tableHtml += `<td style="border: 1px solid #ddd; padding: 12px 8px; text-align: left;">Cell ${i + 1}-${j + 1}</td>`;
             }
             tableHtml += '</tr>';
           }
           tableHtml += '</tbody></table><p><br></p>';
           
+          console.log('Generated table HTML:', tableHtml);
           insertAtCursor(tableHtml);
         }}
       />
@@ -325,6 +393,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showTemplateDialog}
         onClose={() => setShowTemplateDialog(false)}
         onInsert={(templateContent) => {
+          console.log('Template content received:', templateContent);
           insertAtCursor(templateContent);
         }}
       />
@@ -333,7 +402,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onImport={(content) => {
-          insertAtCursor(content);
+          const sanitizedContent = DOMPurify.sanitize(content);
+          insertAtCursor(sanitizedContent);
         }}
       />
     </>

@@ -7,7 +7,6 @@ interface LinkDialogProps {
   onClose: () => void;
   onInsert: (linkData: {
     url: string;
-    displayText?: string;
     title?: string;
     openInNewTab: boolean;
   }) => void;
@@ -15,21 +14,16 @@ interface LinkDialogProps {
 
 const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) => {
   const [url, setUrl] = useState('');
-  const [displayText, setDisplayText] = useState('');
   const [title, setTitle] = useState('');
   const [openInNewTab, setOpenInNewTab] = useState(false);
-  const [hasSelectedText, setHasSelectedText] = useState(false);
   const [selectedText, setSelectedText] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       const selection = window.getSelection();
       const selectedContent = selection?.toString() || '';
-      setHasSelectedText(!!selectedContent);
       setSelectedText(selectedContent);
-      if (selectedContent) {
-        setDisplayText(selectedContent);
-      }
+      console.log('Selected text for link:', selectedContent);
     }
   }, [isOpen]);
 
@@ -42,16 +36,16 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
       finalUrl = 'https://' + finalUrl;
     }
 
+    console.log('Inserting link with data:', { url: finalUrl, title: title.trim(), openInNewTab });
+
     onInsert({
       url: finalUrl,
-      displayText: displayText.trim() || finalUrl,
       title: title.trim(),
       openInNewTab
     });
 
     // Reset form
     setUrl('');
-    setDisplayText('');
     setTitle('');
     setOpenInNewTab(false);
     onClose();
@@ -59,7 +53,6 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
 
   const handleClose = () => {
     setUrl('');
-    setDisplayText('');
     setTitle('');
     setOpenInNewTab(false);
     onClose();
@@ -81,6 +74,14 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {selectedText && (
+            <div className="p-3 bg-blue-50 rounded-md border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <strong>Selected text:</strong> "{selectedText}"
+              </p>
+            </div>
+          )}
+
           <div>
             <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
               URL *
@@ -93,20 +94,6 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
               placeholder="https://example.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="displayText" className="block text-sm font-medium text-gray-700 mb-1">
-              Display Text
-            </label>
-            <input
-              id="displayText"
-              type="text"
-              value={displayText}
-              onChange={(e) => setDisplayText(e.target.value)}
-              placeholder={hasSelectedText ? selectedText : "Click here"}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 

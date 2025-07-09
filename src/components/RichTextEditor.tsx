@@ -4,6 +4,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { setContent } from '../store/editorSlice';
 import EditorToolbar from './EditorToolbar';
+import DOMPurify from 'dompurify';
 
 const RichTextEditor: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -18,13 +19,15 @@ const RichTextEditor: React.FC = () => {
     document.execCommand(command, false, value);
     
     if (editorRef.current) {
-      dispatch(setContent(editorRef.current.innerHTML));
+      const sanitizedContent = DOMPurify.sanitize(editorRef.current.innerHTML);
+      dispatch(setContent(sanitizedContent));
     }
   }, [dispatch]);
 
   const handleContentChange = useCallback(() => {
     if (editorRef.current) {
-      dispatch(setContent(editorRef.current.innerHTML));
+      const sanitizedContent = DOMPurify.sanitize(editorRef.current.innerHTML);
+      dispatch(setContent(sanitizedContent));
     }
   }, [dispatch]);
 
@@ -59,7 +62,8 @@ const RichTextEditor: React.FC = () => {
 
   useEffect(() => {
     if (editorRef.current && content !== editorRef.current.innerHTML) {
-      editorRef.current.innerHTML = content;
+      const sanitizedContent = DOMPurify.sanitize(content);
+      editorRef.current.innerHTML = sanitizedContent;
     }
   }, [content]);
 
@@ -145,6 +149,7 @@ const RichTextEditor: React.FC = () => {
         color: #2563eb;
         text-decoration: underline;
         transition: color 0.2s;
+        cursor: pointer;
       }
       .rich-text-editor a:hover {
         color: #1d4ed8;
