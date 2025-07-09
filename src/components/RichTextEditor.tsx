@@ -69,7 +69,6 @@ const RichTextEditor: React.FC = () => {
       editor.innerHTML = '<p>Start typing your content here...</p>';
     }
 
-    // Enhanced CSS for better styling including tables
     const style = document.createElement('style');
     style.textContent = `
       .rich-text-editor ul {
@@ -151,26 +150,33 @@ const RichTextEditor: React.FC = () => {
         color: #1d4ed8;
       }
       .rich-text-editor table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: 15px 0;
-        font-size: 14px;
+        border-collapse: collapse !important;
+        width: 100% !important;
+        margin: 15px 0 !important;
+        font-size: 14px !important;
+        display: table !important;
+        table-layout: auto !important;
       }
       .rich-text-editor th,
       .rich-text-editor td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
+        border: 1px solid #ddd !important;
+        padding: 12px 8px !important;
+        text-align: left !important;
+        vertical-align: top !important;
+        word-wrap: break-word !important;
       }
       .rich-text-editor th {
-        background-color: #f5f5f5;
-        font-weight: bold;
+        background-color: #f8f9fa !important;
+        font-weight: bold !important;
       }
-      .rich-text-editor tr:nth-child(even) {
-        background-color: #f9f9f9;
+      .rich-text-editor tbody tr:nth-child(even) {
+        background-color: #f9f9f9 !important;
       }
-      .rich-text-editor tr:hover {
-        background-color: #f5f5f5;
+      .rich-text-editor tbody tr:hover {
+        background-color: #f5f5f5 !important;
+      }
+      .rich-text-editor thead tr {
+        background-color: #f8f9fa !important;
       }
       .rich-text-editor blockquote {
         border-left: 4px solid #E5E7EB;
@@ -202,12 +208,12 @@ const RichTextEditor: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full border border-gray-300 rounded-lg bg-white shadow-sm">
+    <div className="w-full max-w-6xl mx-auto border border-gray-300 rounded-lg bg-white shadow-sm">
       <EditorToolbar onCommand={executeCommand} />
       <div
         ref={editorRef}
         contentEditable
-        className="rich-text-editor p-4 sm:p-6 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        className="rich-text-editor p-4 sm:p-6 min-h-96 max-h-screen overflow-y-auto outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         style={{ fontFamily }}
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}

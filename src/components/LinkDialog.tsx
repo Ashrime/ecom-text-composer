@@ -19,14 +19,16 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
   const [title, setTitle] = useState('');
   const [openInNewTab, setOpenInNewTab] = useState(false);
   const [hasSelectedText, setHasSelectedText] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       const selection = window.getSelection();
-      const selectedText = selection?.toString() || '';
-      setHasSelectedText(!!selectedText);
-      if (selectedText) {
-        setDisplayText(selectedText);
+      const selectedContent = selection?.toString() || '';
+      setHasSelectedText(!!selectedContent);
+      setSelectedText(selectedContent);
+      if (selectedContent) {
+        setDisplayText(selectedContent);
       }
     }
   }, [isOpen]);
@@ -42,7 +44,7 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
 
     onInsert({
       url: finalUrl,
-      displayText: displayText.trim(),
+      displayText: hasSelectedText ? selectedText : displayText.trim(),
       title: title.trim(),
       openInNewTab
     });
@@ -112,19 +114,16 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
 
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-              Title (Tooltip) - This will replace the selected text
+              Title (Tooltip)
             </label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Link description that will replace selected text"
+              placeholder="Optional tooltip text"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              {hasSelectedText ? 'If provided, this will replace your selected text' : 'Optional tooltip text'}
-            </p>
           </div>
 
           <div className="flex items-center gap-2">

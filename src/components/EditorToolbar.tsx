@@ -35,7 +35,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
       document.execCommand('formatBlock', false, `h${level}`);
     }
     
-    // Trigger content update
     setTimeout(() => {
       const editorElement = document.querySelector('.rich-text-editor');
       if (editorElement) {
@@ -52,10 +51,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const handleFontFamily = (font: string) => {
     const selection = window.getSelection();
     if (selection && selection.toString()) {
-      // Apply font to selected text only
       onCommand('fontName', font);
     } else {
-      // Update global font family for new text
       dispatch(setFontFamily(font));
       onCommand('fontName', font);
     }
@@ -66,13 +63,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
     const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
     if (editorElement) {
       if (!showPreview) {
-        // Show HTML
         const htmlContent = editorElement.innerHTML;
         editorElement.style.whiteSpace = 'pre-wrap';
         editorElement.style.fontFamily = 'monospace';
         editorElement.textContent = htmlContent;
       } else {
-        // Show rendered content
         const htmlContent = editorElement.textContent || '';
         editorElement.style.whiteSpace = '';
         editorElement.style.fontFamily = fontFamily;
@@ -81,31 +76,66 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
     }
   };
 
-  const insertTableAtCursor = (tableHtml: string) => {
+  const insertAtCursor = (html: string) => {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       range.deleteContents();
       
-      const tableContainer = document.createElement('div');
-      tableContainer.innerHTML = tableHtml;
-      const tableElement = tableContainer.firstChild as HTMLElement;
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const element = tempDiv.firstChild as Node;
       
-      range.insertNode(tableElement);
+      if (element) {
+        range.insertNode(element);
+        range.setStartAfter(element);
+        range.setEndAfter(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
       
-      // Move cursor after the table
-      range.setStartAfter(tableElement);
-      range.setEndAfter(tableElement);
+      setTimeout(() => {
+        const editorElement = document.querySelector('.rich-text-editor');
+        if (editorElement) {
+          const event = new Event('input', { bubbles: true });
+          editorElement.dispatchEvent(event);
+        }
+      }, 10);
+    }
+  };
+
+  const handleLinkInsert = (linkData: any) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString()) {
+      // Replace selected text with link
+      const displayText = linkData.title || linkData.displayText || selection.toString();
+      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${displayText}</a>`;
+      
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = linkHtml;
+      const linkElement = tempDiv.firstChild as Node;
+      
+      range.insertNode(linkElement);
+      range.setStartAfter(linkElement);
+      range.setEndAfter(linkElement);
       selection.removeAllRanges();
       selection.addRange(range);
-      
-      // Trigger content update
+    } else {
+      // Insert new link at cursor
+      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText || linkData.url}</a>`;
+      insertAtCursor(linkHtml);
+    }
+    
+    setTimeout(() => {
       const editorElement = document.querySelector('.rich-text-editor');
       if (editorElement) {
         const event = new Event('input', { bubbles: true });
         editorElement.dispatchEvent(event);
       }
-    }
+    }, 10);
   };
 
   return (
@@ -254,50 +284,35 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
       <LinkDialog
         isOpen={showLinkDialog}
         onClose={() => setShowLinkDialog(false)}
-        onInsert={(linkData) => {
-          const selection = window.getSelection();
-          if (selection && selection.toString()) {
-            // Replace selected text with link
-            const selectedText = selection.toString();
-            const displayText = linkData.title || selectedText;
-            const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${displayText}</a>`;
-            onCommand('insertHTML', linkHtml);
-          } else {
-            // Insert new link at cursor
-            const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText || linkData.url}</a>`;
-            onCommand('insertHTML', linkHtml);
-          }
-        }}
+        onInsert={handleLinkInsert}
       />
 
       <TableDialog
         isOpen={showTableDialog}
         onClose={() => setShowTableDialog(false)}
         onInsert={(tableData) => {
-          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0; border: 1px solid #ddd;">';
           
-          // Create header if requested
           if (tableData.hasHeader) {
             tableHtml += '<thead><tr>';
             for (let i = 0; i < tableData.cols; i++) {
-              tableHtml += '<th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; font-weight: bold;">Header ' + (i + 1) + '</th>';
+              tableHtml += '<th style="border: 1px solid #ddd; padding: 12px 8px; background-color: #f8f9fa; font-weight: bold; text-align: left;">Header ' + (i + 1) + '</th>';
             }
             tableHtml += '</tr></thead>';
           }
           
-          // Create body rows
           tableHtml += '<tbody>';
           const startRow = tableData.hasHeader ? 1 : 0;
           for (let i = startRow; i < tableData.rows; i++) {
             tableHtml += '<tr>';
             for (let j = 0; j < tableData.cols; j++) {
-              tableHtml += '<td style="border: 1px solid #ddd; padding: 8px;">Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
+              tableHtml += '<td style="border: 1px solid #ddd; padding: 12px 8px;">Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
             }
             tableHtml += '</tr>';
           }
-          tableHtml += '</tbody></table>';
+          tableHtml += '</tbody></table><p><br></p>';
           
-          insertTableAtCursor(tableHtml);
+          insertAtCursor(tableHtml);
         }}
       />
 
@@ -305,7 +320,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showTemplateDialog}
         onClose={() => setShowTemplateDialog(false)}
         onInsert={(templateContent) => {
-          onCommand('insertHTML', templateContent);
+          insertAtCursor(templateContent);
         }}
       />
 
@@ -313,7 +328,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onImport={(content) => {
-          onCommand('insertHTML', content);
+          insertAtCursor(content);
         }}
       />
     </>
