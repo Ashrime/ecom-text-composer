@@ -46,26 +46,162 @@ const RichTextEditor: React.FC = () => {
           e.preventDefault();
           executeCommand('underline');
           break;
-        case 'z':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            executeCommand('undo');
-          }
-          break;
-        case 'y':
-          e.preventDefault();
-          executeCommand('redo');
-          break;
       }
     }
   }, [executeCommand]);
+
+  const makeTablesEditable = useCallback(() => {
+    if (editorRef.current) {
+      const tables = editorRef.current.querySelectorAll('table');
+      tables.forEach(table => {
+        // Make table cells editable
+        const cells = table.querySelectorAll('td, th');
+        cells.forEach(cell => {
+          cell.setAttribute('contenteditable', 'true');
+          (cell as HTMLElement).style.minWidth = '50px';
+          (cell as HTMLElement).style.minHeight = '20px';
+        });
+
+        // Add selection styling
+        table.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'TD' || target.tagName === 'TH') {
+            // Remove previous selections
+            table.querySelectorAll('.selected-cell').forEach(cell => {
+              cell.classList.remove('selected-cell');
+            });
+            // Add selection to current cell
+            target.classList.add('selected-cell');
+          }
+        });
+
+        // Add context menu for table operations
+        table.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'TD' || target.tagName === 'TH') {
+            showTableContextMenu(e, target, table as HTMLElement);
+          }
+        });
+      });
+    }
+  }, []);
+
+  const showTableContextMenu = (e: MouseEvent, cell: HTMLElement, table: HTMLElement) => {
+    const menu = document.createElement('div');
+    menu.className = 'fixed bg-white border border-gray-300 rounded shadow-lg z-50 p-2';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+
+    const addRowButton = document.createElement('button');
+    addRowButton.textContent = 'Add Row';
+    addRowButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm';
+    addRowButton.onclick = () => {
+      addTableRow(table, cell);
+      document.body.removeChild(menu);
+    };
+
+    const addColButton = document.createElement('button');
+    addColButton.textContent = 'Add Column';
+    addColButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm';
+    addColButton.onclick = () => {
+      addTableColumn(table, cell);
+      document.body.removeChild(menu);
+    };
+
+    const deleteRowButton = document.createElement('button');
+    deleteRowButton.textContent = 'Delete Row';
+    deleteRowButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm text-red-600';
+    deleteRowButton.onclick = () => {
+      deleteTableRow(table, cell);
+      document.body.removeChild(menu);
+    };
+
+    const deleteColButton = document.createElement('button');
+    deleteColButton.textContent = 'Delete Column';
+    deleteColButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm text-red-600';
+    deleteColButton.onclick = () => {
+      deleteTableColumn(table, cell);
+      document.body.removeChild(menu);
+    };
+
+    menu.appendChild(addRowButton);
+    menu.appendChild(addColButton);
+    menu.appendChild(deleteRowButton);
+    menu.appendChild(deleteColButton);
+
+    document.body.appendChild(menu);
+
+    const removeMenu = () => {
+      if (document.body.contains(menu)) {
+        document.body.removeChild(menu);
+      }
+      document.removeEventListener('click', removeMenu);
+    };
+    setTimeout(() => document.addEventListener('click', removeMenu), 0);
+  };
+
+  const addTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    const row = cell.closest('tr');
+    if (row) {
+      const newRow = row.cloneNode(true) as HTMLElement;
+      const cells = newRow.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.setAttribute('contenteditable', 'true');
+      });
+      row.parentNode?.insertBefore(newRow, row.nextSibling);
+      handleContentChange();
+    }
+  };
+
+  const addTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+      const newCell = document.createElement(row.querySelector('th') ? 'th' : 'td');
+      newCell.setAttribute('contenteditable', 'true');
+      newCell.style.border = '1px solid #ddd';
+      newCell.style.padding = '12px 8px';
+      newCell.style.minWidth = '50px';
+      newCell.textContent = '';
+      
+      const referenceCell = row.children[cellIndex];
+      referenceCell.parentNode?.insertBefore(newCell, referenceCell.nextSibling);
+    });
+    handleContentChange();
+  };
+
+  const deleteTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    const row = cell.closest('tr');
+    if (row && table.querySelectorAll('tr').length > 1) {
+      row.remove();
+      handleContentChange();
+    }
+  };
+
+  const deleteTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    
+    if (rows.length > 0 && rows[0].children.length > 1) {
+      rows.forEach(row => {
+        if (row.children[cellIndex]) {
+          row.children[cellIndex].remove();
+        }
+      });
+      handleContentChange();
+    }
+  };
 
   useEffect(() => {
     if (editorRef.current && content !== editorRef.current.innerHTML) {
       const sanitizedContent = DOMPurify.sanitize(content);
       editorRef.current.innerHTML = sanitizedContent;
+      makeTablesEditable();
     }
-  }, [content]);
+  }, [content, makeTablesEditable]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -169,6 +305,7 @@ const RichTextEditor: React.FC = () => {
         text-align: left !important;
         vertical-align: top !important;
         word-wrap: break-word !important;
+        position: relative !important;
       }
       .rich-text-editor th {
         background-color: #f8f9fa !important;
@@ -182,6 +319,17 @@ const RichTextEditor: React.FC = () => {
       }
       .rich-text-editor thead tr {
         background-color: #f8f9fa !important;
+      }
+      .rich-text-editor .selected-cell {
+        background-color: #e3f2fd !important;
+        outline: 2px solid #2196f3 !important;
+      }
+      .rich-text-editor table:hover {
+        cursor: pointer;
+      }
+      .rich-text-editor td:hover,
+      .rich-text-editor th:hover {
+        background-color: #e8f4f8 !important;
       }
       .rich-text-editor blockquote {
         border-left: 4px solid #E5E7EB;
@@ -211,6 +359,11 @@ const RichTextEditor: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Make tables editable when content changes
+  useEffect(() => {
+    makeTablesEditable();
+  }, [content, makeTablesEditable]);
 
   return (
     <div className="w-full max-w-6xl mx-auto border border-gray-300 rounded-lg bg-white shadow-sm">

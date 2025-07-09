@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Undo, Redo, Link, Upload, Code, Table, FileText } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks';
-import { setFontFamily } from '../store/editorSlice';
+import { setFontFamily, setContent } from '../store/editorSlice';
 import FormatButtons from './toolbar/FormatButtons';
 import AlignmentButtons from './toolbar/AlignmentButtons';
 import ListButtons from './toolbar/ListButtons';
@@ -26,7 +25,46 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Store editor history for proper undo/redo
+  const [editorHistory, setEditorHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  const saveToHistory = () => {
+    const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+    if (editorElement) {
+      const content = editorElement.innerHTML;
+      const newHistory = [...editorHistory.slice(0, historyIndex + 1), content];
+      setEditorHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  };
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+      if (editorElement && editorHistory[newIndex]) {
+        editorElement.innerHTML = editorHistory[newIndex];
+        setHistoryIndex(newIndex);
+        dispatch(setContent(editorHistory[newIndex]));
+      }
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < editorHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+      if (editorElement && editorHistory[newIndex]) {
+        editorElement.innerHTML = editorHistory[newIndex];
+        setHistoryIndex(newIndex);
+        dispatch(setContent(editorHistory[newIndex]));
+      }
+    }
+  };
+
   const handleHeading = (level: string) => {
+    saveToHistory();
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
@@ -46,16 +84,16 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   };
 
   const handleFontSize = (size: string) => {
+    saveToHistory();
     onCommand('fontSize', size);
   };
 
   const handleFontFamily = (font: string) => {
+    saveToHistory();
     const selection = window.getSelection();
     if (selection && selection.toString()) {
-      // Apply font to selected text only
       onCommand('fontName', font);
     } else {
-      // Set default font for new text
       dispatch(setFontFamily(font));
     }
   };
@@ -79,6 +117,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   };
 
   const insertAtCursor = (html: string) => {
+    saveToHistory();
     console.log('Inserting content at cursor:', html);
     
     const selection = window.getSelection();
@@ -89,35 +128,28 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
       return;
     }
 
-    // Sanitize the HTML content
     const sanitizedHtml = DOMPurify.sanitize(html);
     console.log('Sanitized HTML:', sanitizedHtml);
 
-    // Focus the editor first
     editorElement.focus();
 
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       range.deleteContents();
       
-      // Create a temporary div to parse the HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = sanitizedHtml;
       
-      // Insert each child node
       const fragment = document.createDocumentFragment();
       while (tempDiv.firstChild) {
         fragment.appendChild(tempDiv.firstChild);
       }
       
       range.insertNode(fragment);
-      
-      // Move cursor to end of inserted content
       range.collapse(false);
       selection.removeAllRanges();
       selection.addRange(range);
     } else {
-      // If no selection, append to end
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = sanitizedHtml;
       while (tempDiv.firstChild) {
@@ -125,86 +157,157 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
       }
     }
     
-    // Trigger content change event
     setTimeout(() => {
       const event = new Event('input', { bubbles: true });
       editorElement.dispatchEvent(event);
     }, 10);
   };
 
-  const handleLinkInsert = (linkData: any) => {
-    console.log('Handle link insert called with:', linkData);
-    
-    const selection = window.getSelection();
+  const linkSpecificText = (keyword: string, url: string, openInNewTab: boolean) => {
     const editorElement = document.querySelector('.rich-text-editor') as HTMLElement;
+    if (!editorElement) return;
+
+    const content = editorElement.innerHTML;
     
-    if (!editorElement) {
-      console.error('Editor element not found');
-      return;
-    }
-
-    editorElement.focus();
-
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const selectedText = selection.toString();
+    // Escape keyword for use in RegExp
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    // Create regex to replace only exact matches that aren't already in links
+    const regex = new RegExp(`(?<!<[^>]*>)\\b(${escapedKeyword})\\b(?![^<]*</a>)`, 'g');
+    
+    const target = openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const replacedContent = content.replace(regex, `<a href="${url}"${target} style="color: #2563eb; text-decoration: underline;">$1</a>`);
+    
+    if (replacedContent !== content) {
+      editorElement.innerHTML = replacedContent;
       
-      console.log('Selected text:', selectedText);
-      
-      if (selectedText) {
-        // Replace selected text with link
-        range.deleteContents();
-        
-        const linkElement = document.createElement('a');
-        linkElement.href = linkData.url;
-        linkElement.textContent = selectedText;
-        
-        if (linkData.title) {
-          linkElement.title = linkData.title;
-        }
-        
-        if (linkData.openInNewTab) {
-          linkElement.target = '_blank';
-          linkElement.rel = 'noopener noreferrer';
-        }
-        
-        // Apply link styling
-        linkElement.style.color = '#2563eb';
-        linkElement.style.textDecoration = 'underline';
-        
-        range.insertNode(linkElement);
-        
-        // Clear selection and position cursor after link
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.setStartAfter(linkElement);
-        newRange.setEndAfter(linkElement);
-        selection.addRange(newRange);
-        
-        console.log('Link inserted successfully');
-      } else {
-        console.log('No text selected, inserting new link');
-        // Insert new link at cursor position
-        const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''} style="color: #2563eb; text-decoration: underline;">${linkData.url}</a>`;
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = linkHtml;
-        const linkElement = tempDiv.firstChild as Node;
-        range.insertNode(linkElement);
-        
-        // Position cursor after link
-        selection.removeAllRanges();
-        const newRange = document.createRange();
-        newRange.setStartAfter(linkElement);
-        newRange.setEndAfter(linkElement);
-        selection.addRange(newRange);
-      }
-      
-      // Trigger content change event
+      // Trigger content change
       setTimeout(() => {
         const event = new Event('input', { bubbles: true });
         editorElement.dispatchEvent(event);
       }, 10);
+    }
+  };
+
+  const handleLinkInsert = (linkData: any) => {
+    console.log('Handle link insert called with:', linkData);
+    saveToHistory();
+    
+    if (linkData.selectedText) {
+      linkSpecificText(linkData.selectedText, linkData.url, linkData.openInNewTab);
+    }
+  };
+
+  const makeTableEditable = (table: HTMLElement) => {
+    // Make table cells editable
+    const cells = table.querySelectorAll('td, th');
+    cells.forEach(cell => {
+      cell.setAttribute('contenteditable', 'true');
+      cell.style.minWidth = '50px';
+      cell.style.minHeight = '20px';
+    });
+
+    // Add context menu for table operations
+    table.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'TD' || target.tagName === 'TH') {
+        showTableContextMenu(e, target, table);
+      }
+    });
+  };
+
+  const showTableContextMenu = (e: MouseEvent, cell: HTMLElement, table: HTMLElement) => {
+    const menu = document.createElement('div');
+    menu.className = 'fixed bg-white border border-gray-300 rounded shadow-lg z-50 p-2';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+
+    const addRowButton = document.createElement('button');
+    addRowButton.textContent = 'Add Row';
+    addRowButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm';
+    addRowButton.onclick = () => addTableRow(table, cell);
+
+    const addColButton = document.createElement('button');
+    addColButton.textContent = 'Add Column';
+    addColButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm';
+    addColButton.onclick = () => addTableColumn(table, cell);
+
+    const deleteRowButton = document.createElement('button');
+    deleteRowButton.textContent = 'Delete Row';
+    deleteRowButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm text-red-600';
+    deleteRowButton.onclick = () => deleteTableRow(table, cell);
+
+    const deleteColButton = document.createElement('button');
+    deleteColButton.textContent = 'Delete Column';
+    deleteColButton.className = 'block w-full text-left px-3 py-1 hover:bg-gray-100 text-sm text-red-600';
+    deleteColButton.onclick = () => deleteTableColumn(table, cell);
+
+    menu.appendChild(addRowButton);
+    menu.appendChild(addColButton);
+    menu.appendChild(deleteRowButton);
+    menu.appendChild(deleteColButton);
+
+    document.body.appendChild(menu);
+
+    // Remove menu when clicking elsewhere
+    const removeMenu = () => {
+      document.body.removeChild(menu);
+      document.removeEventListener('click', removeMenu);
+    };
+    setTimeout(() => document.addEventListener('click', removeMenu), 0);
+  };
+
+  const addTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    saveToHistory();
+    const row = cell.closest('tr');
+    if (row) {
+      const newRow = row.cloneNode(true) as HTMLElement;
+      const cells = newRow.querySelectorAll('td, th');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.setAttribute('contenteditable', 'true');
+      });
+      row.parentNode?.insertBefore(newRow, row.nextSibling);
+    }
+  };
+
+  const addTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    saveToHistory();
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    
+    rows.forEach(row => {
+      const newCell = document.createElement(row.querySelector('th') ? 'th' : 'td');
+      newCell.setAttribute('contenteditable', 'true');
+      newCell.style.border = '1px solid #ddd';
+      newCell.style.padding = '12px 8px';
+      newCell.textContent = '';
+      
+      const referenceCell = row.children[cellIndex];
+      referenceCell.parentNode?.insertBefore(newCell, referenceCell.nextSibling);
+    });
+  };
+
+  const deleteTableRow = (table: HTMLElement, cell: HTMLElement) => {
+    saveToHistory();
+    const row = cell.closest('tr');
+    if (row && table.querySelectorAll('tr').length > 1) {
+      row.remove();
+    }
+  };
+
+  const deleteTableColumn = (table: HTMLElement, cell: HTMLElement) => {
+    saveToHistory();
+    const cellIndex = Array.from(cell.parentNode!.children).indexOf(cell);
+    const rows = table.querySelectorAll('tr');
+    
+    if (rows.length > 0 && rows[0].children.length > 1) {
+      rows.forEach(row => {
+        if (row.children[cellIndex]) {
+          row.children[cellIndex].remove();
+        }
+      });
     }
   };
 
@@ -261,15 +364,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
 
           {/* Center Section - Format Tools */}
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            <FormatButtons onCommand={onCommand} />
+            <FormatButtons onCommand={(cmd, val) => { saveToHistory(); onCommand(cmd, val); }} />
             
             <div className="h-5 w-px bg-gray-300 hidden sm:block" />
             
-            <ColorTools onCommand={onCommand} />
+            <ColorTools onCommand={(cmd, val) => { saveToHistory(); onCommand(cmd, val); }} />
             
             <div className="h-5 w-px bg-gray-300 hidden sm:block" />
             
-            <ListButtons onCommand={onCommand} />
+            <ListButtons onCommand={(cmd, val) => { saveToHistory(); onCommand(cmd, val); }} />
           </div>
 
           {/* Right Section - Actions */}
@@ -327,8 +430,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4 flex-wrap">
           <div className="flex items-center gap-1 sm:gap-3">
             <button
-              onClick={() => onCommand('undo')}
-              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Undo (Ctrl+Z)"
               type="button"
             >
@@ -336,8 +440,9 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
             </button>
 
             <button
-              onClick={() => onCommand('redo')}
-              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
+              onClick={handleRedo}
+              disabled={historyIndex >= editorHistory.length - 1}
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               title="Redo (Ctrl+Y)"
               type="button"
             >
@@ -346,7 +451,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
 
             <div className="h-5 w-px bg-gray-300 hidden sm:block" />
 
-            <AlignmentButtons onCommand={onCommand} />
+            <AlignmentButtons onCommand={(cmd, val) => { saveToHistory(); onCommand(cmd, val); }} />
           </div>
         </div>
       </div>
@@ -363,12 +468,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         onInsert={(tableData) => {
           console.log('Table data received:', tableData);
           
-          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 14px;">';
+          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 15px 0; font-size: 14px; cursor: pointer;" class="editable-table">';
           
           if (tableData.hasHeader) {
             tableHtml += '<thead><tr>';
             for (let i = 0; i < tableData.cols; i++) {
-              tableHtml += `<th style="border: 1px solid #ddd; padding: 12px 8px; text-align: left; background-color: #f8f9fa; font-weight: bold;">Header ${i + 1}</th>`;
+              tableHtml += `<th contenteditable="true" style="border: 1px solid #ddd; padding: 12px 8px; text-align: left; background-color: #f8f9fa; font-weight: bold; min-width: 50px;">Header ${i + 1}</th>`;
             }
             tableHtml += '</tr></thead>';
           }
@@ -378,7 +483,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           for (let i = startRow; i < tableData.rows; i++) {
             tableHtml += '<tr>';
             for (let j = 0; j < tableData.cols; j++) {
-              tableHtml += `<td style="border: 1px solid #ddd; padding: 12px 8px; text-align: left;">Cell ${i + 1}-${j + 1}</td>`;
+              tableHtml += `<td contenteditable="true" style="border: 1px solid #ddd; padding: 12px 8px; text-align: left; min-width: 50px;">Cell ${i + 1}-${j + 1}</td>`;
             }
             tableHtml += '</tr>';
           }
@@ -386,6 +491,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           
           console.log('Generated table HTML:', tableHtml);
           insertAtCursor(tableHtml);
+          
+          // Make the table editable after insertion
+          setTimeout(() => {
+            const tables = document.querySelectorAll('.rich-text-editor .editable-table');
+            tables.forEach(table => makeTableEditable(table as HTMLElement));
+          }, 100);
         }}
       />
 
