@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Undo, Redo, Link, Upload, Code, Table } from 'lucide-react';
+import { Undo, Redo, Link, Upload, Code, Table, FileText } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../hooks';
 import { setFontFamily } from '../store/editorSlice';
 import FormatButtons from './toolbar/FormatButtons';
@@ -10,6 +10,7 @@ import ColorTools from './toolbar/ColorTools';
 import ImportModal from './ImportModal';
 import LinkDialog from './LinkDialog';
 import TableDialog from './TableDialog';
+import TemplateDialog from './TemplateDialog';
 
 interface EditorToolbarProps {
   onCommand: (command: string, value?: string) => void;
@@ -21,6 +22,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   const handleHeading = (level: string) => {
@@ -48,8 +50,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   };
 
   const handleFontFamily = (font: string) => {
-    dispatch(setFontFamily(font));
-    onCommand('fontName', font);
+    const selection = window.getSelection();
+    if (selection && selection.toString()) {
+      // Apply font to selected text only
+      onCommand('fontName', font);
+    } else {
+      // Update global font family for new text
+      dispatch(setFontFamily(font));
+      onCommand('fontName', font);
+    }
   };
 
   const handlePreviewToggle = () => {
@@ -72,16 +81,43 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
     }
   };
 
+  const insertTableAtCursor = (tableHtml: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      
+      const tableContainer = document.createElement('div');
+      tableContainer.innerHTML = tableHtml;
+      const tableElement = tableContainer.firstChild as HTMLElement;
+      
+      range.insertNode(tableElement);
+      
+      // Move cursor after the table
+      range.setStartAfter(tableElement);
+      range.setEndAfter(tableElement);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      // Trigger content update
+      const editorElement = document.querySelector('.rich-text-editor');
+      if (editorElement) {
+        const event = new Event('input', { bubbles: true });
+        editorElement.dispatchEvent(event);
+      }
+    }
+  };
+
   return (
     <>
-      <div className="bg-white border-b border-gray-300 px-4 py-3 shadow-sm">
+      <div className="bg-white border-b border-gray-300 px-2 sm:px-4 py-3 shadow-sm">
         {/* First Row - Main formatting tools */}
-        <div className="flex items-center justify-between w-full gap-4 mb-3">
+        <div className="flex flex-wrap items-center justify-between w-full gap-2 sm:gap-4 mb-3">
           {/* Left Section - Headings and Font */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 flex-wrap">
             <select
               onChange={(e) => handleHeading(e.target.value)}
-              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[110px]"
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[90px] sm:min-w-[110px]"
               defaultValue=""
             >
               <option value="">Normal</option>
@@ -96,7 +132,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
             <select
               value={fontFamily}
               onChange={(e) => handleFontFamily(e.target.value)}
-              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[130px]"
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[100px] sm:min-w-[130px]"
             >
               <option value="Arial">Arial</option>
               <option value="Times New Roman">Times New Roman</option>
@@ -110,7 +146,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
 
             <select
               onChange={(e) => handleFontSize(e.target.value)}
-              className="h-8 px-3 text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[70px]"
+              className="h-8 px-2 sm:px-3 text-xs sm:text-sm border border-gray-300 rounded bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[60px] sm:min-w-[70px]"
               defaultValue="3"
             >
               <option value="1">8pt</option>
@@ -124,20 +160,20 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           </div>
 
           {/* Center Section - Format Tools */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <FormatButtons onCommand={onCommand} />
             
-            <div className="h-5 w-px bg-gray-300" />
+            <div className="h-5 w-px bg-gray-300 hidden sm:block" />
             
             <ColorTools onCommand={onCommand} />
             
-            <div className="h-5 w-px bg-gray-300" />
+            <div className="h-5 w-px bg-gray-300 hidden sm:block" />
             
             <ListButtons onCommand={onCommand} />
           </div>
 
           {/* Right Section - Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 flex-wrap">
             <button
               onClick={() => setShowLinkDialog(true)}
               className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
@@ -154,6 +190,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
               type="button"
             >
               <Table size={14} className="text-gray-700" />
+            </button>
+
+            <button
+              onClick={() => setShowTemplateDialog(true)}
+              className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
+              title="Insert Template"
+              type="button"
+            >
+              <FileText size={14} className="text-gray-700" />
             </button>
 
             <button
@@ -179,8 +224,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         </div>
 
         {/* Second Row - Alignment and Undo/Redo */}
-        <div className="flex items-center justify-between w-full gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between w-full gap-2 sm:gap-4 flex-wrap">
+          <div className="flex items-center gap-1 sm:gap-3">
             <button
               onClick={() => onCommand('undo')}
               className="h-8 w-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-300"
@@ -199,7 +244,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
               <Redo size={14} className="text-gray-700" />
             </button>
 
-            <div className="h-5 w-px bg-gray-300" />
+            <div className="h-5 w-px bg-gray-300 hidden sm:block" />
 
             <AlignmentButtons onCommand={onCommand} />
           </div>
@@ -214,10 +259,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           if (selection && selection.toString()) {
             // Replace selected text with link
             const selectedText = selection.toString();
-            const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.title || selectedText}</a>`;
+            const displayText = linkData.title || selectedText;
+            const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${displayText}</a>`;
             onCommand('insertHTML', linkHtml);
           } else {
-            // Insert new link
+            // Insert new link at cursor
             const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText || linkData.url}</a>`;
             onCommand('insertHTML', linkHtml);
           }
@@ -251,7 +297,15 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           }
           tableHtml += '</tbody></table>';
           
-          onCommand('insertHTML', tableHtml);
+          insertTableAtCursor(tableHtml);
+        }}
+      />
+
+      <TemplateDialog
+        isOpen={showTemplateDialog}
+        onClose={() => setShowTemplateDialog(false)}
+        onInsert={(templateContent) => {
+          onCommand('insertHTML', templateContent);
         }}
       />
 

@@ -25,7 +25,9 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
       const selection = window.getSelection();
       const selectedText = selection?.toString() || '';
       setHasSelectedText(!!selectedText);
-      setDisplayText(selectedText);
+      if (selectedText) {
+        setDisplayText(selectedText);
+      }
     }
   }, [isOpen]);
 
@@ -64,7 +66,7 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-800">Insert Link</h3>
@@ -110,16 +112,19 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
 
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-              Title (Tooltip)
+              Title (Tooltip) - This will replace the selected text
             </label>
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Additional information about the link"
+              placeholder="Link description that will replace selected text"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {hasSelectedText ? 'If provided, this will replace your selected text' : 'Optional tooltip text'}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

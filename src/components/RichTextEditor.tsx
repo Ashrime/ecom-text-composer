@@ -207,7 +207,7 @@ const RichTextEditor: React.FC = () => {
       <div
         ref={editorRef}
         contentEditable
-        className="rich-text-editor p-6 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        className="rich-text-editor p-4 sm:p-6 min-h-96 outline-none text-gray-800 leading-relaxed focus:ring-2 focus:ring-blue-500 focus:ring-inset"
         style={{ fontFamily }}
         onInput={handleContentChange}
         onKeyDown={handleKeyDown}
