@@ -44,7 +44,7 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
 
     onInsert({
       url: finalUrl,
-      displayText: hasSelectedText ? selectedText : displayText.trim(),
+      displayText: displayText.trim() || finalUrl,
       title: title.trim(),
       openInNewTab
     });
@@ -96,21 +96,19 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
             />
           </div>
 
-          {!hasSelectedText && (
-            <div>
-              <label htmlFor="displayText" className="block text-sm font-medium text-gray-700 mb-1">
-                Text to Display
-              </label>
-              <input
-                id="displayText"
-                type="text"
-                value={displayText}
-                onChange={(e) => setDisplayText(e.target.value)}
-                placeholder="Click here"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          )}
+          <div>
+            <label htmlFor="displayText" className="block text-sm font-medium text-gray-700 mb-1">
+              Display Text
+            </label>
+            <input
+              id="displayText"
+              type="text"
+              value={displayText}
+              onChange={(e) => setDisplayText(e.target.value)}
+              placeholder={hasSelectedText ? selectedText : "Click here"}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">

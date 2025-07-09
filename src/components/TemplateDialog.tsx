@@ -17,23 +17,13 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Product Features',
       icon: Package,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">🌟 Key Features</h3>
-          <ul style="list-style: none; padding: 0;">
-            <li style="margin: 10px 0; padding: 10px; background: #F3F4F6; border-radius: 8px;">
-              <strong>✅ Premium Quality:</strong> Made with high-quality materials for lasting durability
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: #F3F4F6; border-radius: 8px;">
-              <strong>🚀 Fast Performance:</strong> Optimized for speed and efficiency in daily use
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: #F3F4F6; border-radius: 8px;">
-              <strong>🎨 Elegant Design:</strong> Sleek and modern aesthetic that fits any environment
-            </li>
-            <li style="margin: 10px 0; padding: 10px; background: #F3F4F6; border-radius: 8px;">
-              <strong>🔧 Easy Setup:</strong> Quick and hassle-free installation process
-            </li>
-          </ul>
-        </div>
+        <h3>🌟 Key Features</h3>
+        <ul>
+          <li><strong>✅ Premium Quality:</strong> Made with high-quality materials for lasting durability</li>
+          <li><strong>🚀 Fast Performance:</strong> Optimized for speed and efficiency in daily use</li>
+          <li><strong>🎨 Elegant Design:</strong> Sleek and modern aesthetic that fits any environment</li>
+          <li><strong>🔧 Easy Setup:</strong> Quick and hassle-free installation process</li>
+        </ul>
       `
     },
     {
@@ -41,31 +31,29 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Product Specifications',
       icon: Award,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">📋 Specifications</h3>
-          <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-            <tr>
-              <td style="border: 1px solid #E5E7EB; padding: 12px; background: #F9FAFB; font-weight: bold;">Dimensions</td>
-              <td style="border: 1px solid #E5E7EB; padding: 12px;">15" x 12" x 8"</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #E5E7EB; padding: 12px; background: #F9FAFB; font-weight: bold;">Weight</td>
-              <td style="border: 1px solid #E5E7EB; padding: 12px;">2.5 lbs</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #E5E7EB; padding: 12px; background: #F9FAFB; font-weight: bold;">Material</td>
-              <td style="border: 1px solid #E5E7EB; padding: 12px;">Premium aluminum alloy</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #E5E7EB; padding: 12px; background: #F9FAFB; font-weight: bold;">Color Options</td>
-              <td style="border: 1px solid #E5E7EB; padding: 12px;">Black, Silver, Rose Gold</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #E5E7EB; padding: 12px; background: #F9FAFB; font-weight: bold;">Warranty</td>
-              <td style="border: 1px solid #E5E7EB; padding: 12px;">2 years limited warranty</td>
-            </tr>
-          </table>
-        </div>
+        <h3>📋 Specifications</h3>
+        <table>
+          <tr>
+            <td><strong>Dimensions</strong></td>
+            <td>15" x 12" x 8"</td>
+          </tr>
+          <tr>
+            <td><strong>Weight</strong></td>
+            <td>2.5 lbs</td>
+          </tr>
+          <tr>
+            <td><strong>Material</strong></td>
+            <td>Premium aluminum alloy</td>
+          </tr>
+          <tr>
+            <td><strong>Color Options</strong></td>
+            <td>Black, Silver, Rose Gold</td>
+          </tr>
+          <tr>
+            <td><strong>Warranty</strong></td>
+            <td>2 years limited warranty</td>
+          </tr>
+        </table>
       `
     },
     {
@@ -73,29 +61,21 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Shipping & Returns',
       icon: Truck,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">🚚 Shipping & Returns</h3>
-          
-          <div style="background: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <h4 style="color: #1E40AF; margin: 0 0 10px 0;">📦 Shipping Information</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>Free shipping on orders over $50</li>
-              <li>Standard delivery: 3-5 business days</li>
-              <li>Express shipping available (1-2 days)</li>
-              <li>International shipping to most countries</li>
-            </ul>
-          </div>
-
-          <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <h4 style="color: #166534; margin: 0 0 10px 0;">🔄 Return Policy</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>30-day return window</li>
-              <li>Free returns on defective items</li>
-              <li>Items must be in original condition</li>
-              <li>Refund processed within 5-7 business days</li>
-            </ul>
-          </div>
-        </div>
+        <h3>🚚 Shipping & Returns</h3>
+        <h4>📦 Shipping Information</h4>
+        <ul>
+          <li>Free shipping on orders over $50</li>
+          <li>Standard delivery: 3-5 business days</li>
+          <li>Express shipping available (1-2 days)</li>
+          <li>International shipping to most countries</li>
+        </ul>
+        <h4>🔄 Return Policy</h4>
+        <ul>
+          <li>30-day return window</li>
+          <li>Free returns on defective items</li>
+          <li>Items must be in original condition</li>
+          <li>Refund processed within 5-7 business days</li>
+        </ul>
       `
     },
     {
@@ -103,33 +83,15 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Customer Reviews',
       icon: Star,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">⭐ Customer Reviews</h3>
-          
-          <div style="background: #FFFBEB; border: 1px solid #FED7AA; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <span style="color: #F59E0B; font-size: 18px;">⭐⭐⭐⭐⭐</span>
-              <strong style="margin-left: 10px;">Sarah M.</strong>
-            </div>
-            <p style="margin: 0; font-style: italic;">"Absolutely love this product! The quality is outstanding and it arrived faster than expected. Highly recommend!"</p>
-          </div>
-
-          <div style="background: #FFFBEB; border: 1px solid #FED7AA; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <span style="color: #F59E0B; font-size: 18px;">⭐⭐⭐⭐⭐</span>
-              <strong style="margin-left: 10px;">John D.</strong>
-            </div>
-            <p style="margin: 0; font-style: italic;">"Great value for money. The design is sleek and it works perfectly. Customer service was also very helpful."</p>
-          </div>
-
-          <div style="background: #FFFBEB; border: 1px solid #FED7AA; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <span style="color: #F59E0B; font-size: 18px;">⭐⭐⭐⭐⭐</span>
-              <strong style="margin-left: 10px;">Emily R.</strong>
-            </div>
-            <p style="margin: 0; font-style: italic;">"Exceeded my expectations! The quality is amazing and it's exactly what I was looking for. Will definitely buy again."</p>
-          </div>
-        </div>
+        <h3>⭐ Customer Reviews</h3>
+        <p><strong>⭐⭐⭐⭐⭐ Sarah M.</strong><br>
+        <em>"Absolutely love this product! The quality is outstanding and it arrived faster than expected. Highly recommend!"</em></p>
+        
+        <p><strong>⭐⭐⭐⭐⭐ John D.</strong><br>
+        <em>"Great value for money. The design is sleek and it works perfectly. Customer service was also very helpful."</em></p>
+        
+        <p><strong>⭐⭐⭐⭐⭐ Emily R.</strong><br>
+        <em>"Exceeded my expectations! The quality is amazing and it's exactly what I was looking for. Will definitely buy again."</em></p>
       `
     },
     {
@@ -137,34 +99,23 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Warranty & Support',
       icon: Shield,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">🛡️ Warranty & Support</h3>
-          
-          <div style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <h4 style="color: #0C4A6E; margin: 0 0 10px 0;">🔒 Warranty Coverage</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li><strong>2-Year Limited Warranty</strong> on manufacturing defects</li>
-              <li>Coverage includes parts and labor</li>
-              <li>Warranty valid from purchase date</li>
-              <li>Register your product for extended benefits</li>
-            </ul>
-          </div>
-
-          <div style="background: #F5F3FF; border: 1px solid #D8B4FE; border-radius: 8px; padding: 15px; margin: 15px 0;">
-            <h4 style="color: #6B21A8; margin: 0 0 10px 0;">📞 Customer Support</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>24/7 customer support hotline</li>
-              <li>Live chat available on our website</li>
-              <li>Comprehensive FAQ and troubleshooting guides</li>
-              <li>Video tutorials and setup guides</li>
-            </ul>
-          </div>
-
-          <div style="text-align: center; margin: 20px 0; padding: 15px; background: #F8FAFC; border-radius: 8px;">
-            <p style="margin: 0; font-weight: bold; color: #374151;">Need Help? Contact Us:</p>
-            <p style="margin: 5px 0; color: #6B7280;">📧 support@company.com | 📞 1-800-SUPPORT</p>
-          </div>
-        </div>
+        <h3>🛡️ Warranty & Support</h3>
+        <h4>🔒 Warranty Coverage</h4>
+        <ul>
+          <li><strong>2-Year Limited Warranty</strong> on manufacturing defects</li>
+          <li>Coverage includes parts and labor</li>
+          <li>Warranty valid from purchase date</li>
+          <li>Register your product for extended benefits</li>
+        </ul>
+        <h4>📞 Customer Support</h4>
+        <ul>
+          <li>24/7 customer support hotline</li>
+          <li>Live chat available on our website</li>
+          <li>Comprehensive FAQ and troubleshooting guides</li>
+          <li>Video tutorials and setup guides</li>
+        </ul>
+        <p><strong>Need Help? Contact Us:</strong><br>
+        📧 support@company.com | 📞 1-800-SUPPORT</p>
       `
     },
     {
@@ -172,46 +123,43 @@ const TemplateDialog: React.FC<TemplateDialogProps> = ({ isOpen, onClose, onInse
       name: 'Product Comparison',
       icon: ShoppingBag,
       content: `
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1F2937; font-size: 1.5em; margin-bottom: 15px;">⚖️ Product Comparison</h3>
-          
-          <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
-            <thead>
-              <tr style="background: #F3F4F6;">
-                <th style="border: 1px solid #E5E7EB; padding: 12px; text-align: left;">Feature</th>
-                <th style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Basic</th>
-                <th style="border: 1px solid #E5E7EB; padding: 12px; text-align: center; background: #EFF6FF;">Pro ⭐</th>
-                <th style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Premium</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; font-weight: bold;">Price</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">$99</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center; background: #EFF6FF;">$149</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">$199</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; font-weight: bold;">Warranty</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">1 Year</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center; background: #EFF6FF;">2 Years</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">3 Years</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; font-weight: bold;">Features</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Standard</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center; background: #EFF6FF;">Advanced</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Premium</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; font-weight: bold;">Support</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Email</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center; background: #EFF6FF;">24/7 Chat</td>
-                <td style="border: 1px solid #E5E7EB; padding: 12px; text-align: center;">Priority</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h3>⚖️ Product Comparison</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Basic</th>
+              <th>Pro ⭐</th>
+              <th>Premium</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Price</strong></td>
+              <td>$99</td>
+              <td>$149</td>
+              <td>$199</td>
+            </tr>
+            <tr>
+              <td><strong>Warranty</strong></td>
+              <td>1 Year</td>
+              <td>2 Years</td>
+              <td>3 Years</td>
+            </tr>
+            <tr>
+              <td><strong>Features</strong></td>
+              <td>Standard</td>
+              <td>Advanced</td>
+              <td>Premium</td>
+            </tr>
+            <tr>
+              <td><strong>Support</strong></td>
+              <td>Email</td>
+              <td>24/7 Chat</td>
+              <td>Priority</td>
+            </tr>
+          </tbody>
+        </table>
       `
     }
   ];

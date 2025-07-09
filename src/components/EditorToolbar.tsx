@@ -51,10 +51,11 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
   const handleFontFamily = (font: string) => {
     const selection = window.getSelection();
     if (selection && selection.toString()) {
+      // Apply font to selected text only
       onCommand('fontName', font);
     } else {
+      // Set default font for new text
       dispatch(setFontFamily(font));
-      onCommand('fontName', font);
     }
   };
 
@@ -106,36 +107,40 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
 
   const handleLinkInsert = (linkData: any) => {
     const selection = window.getSelection();
-    if (selection && selection.toString()) {
-      // Replace selected text with link
-      const displayText = linkData.title || linkData.displayText || selection.toString();
-      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${displayText}</a>`;
-      
+    if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      range.deleteContents();
+      const selectedText = selection.toString();
       
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = linkHtml;
-      const linkElement = tempDiv.firstChild as Node;
+      // Create the link HTML
+      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText}</a>`;
       
-      range.insertNode(linkElement);
-      range.setStartAfter(linkElement);
-      range.setEndAfter(linkElement);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      // Insert new link at cursor
-      const linkHtml = `<a href="${linkData.url}"${linkData.title ? ` title="${linkData.title}"` : ''}${linkData.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${linkData.displayText || linkData.url}</a>`;
-      insertAtCursor(linkHtml);
-    }
-    
-    setTimeout(() => {
-      const editorElement = document.querySelector('.rich-text-editor');
-      if (editorElement) {
-        const event = new Event('input', { bubbles: true });
-        editorElement.dispatchEvent(event);
+      if (selectedText) {
+        // Replace selected text with link - this is the MS Word behavior
+        range.deleteContents();
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = linkHtml;
+        const linkElement = tempDiv.firstChild as Node;
+        range.insertNode(linkElement);
+        
+        // Clear selection and position cursor after link
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.setStartAfter(linkElement);
+        newRange.setEndAfter(linkElement);
+        selection.addRange(newRange);
+      } else {
+        // Insert new link at cursor position
+        insertAtCursor(linkHtml);
       }
-    }, 10);
+      
+      setTimeout(() => {
+        const editorElement = document.querySelector('.rich-text-editor');
+        if (editorElement) {
+          const event = new Event('input', { bubbles: true });
+          editorElement.dispatchEvent(event);
+        }
+      }, 10);
+    }
   };
 
   return (
@@ -291,12 +296,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
         isOpen={showTableDialog}
         onClose={() => setShowTableDialog(false)}
         onInsert={(tableData) => {
-          let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 10px 0; border: 1px solid #ddd;">';
+          let tableHtml = '<table>';
           
           if (tableData.hasHeader) {
             tableHtml += '<thead><tr>';
             for (let i = 0; i < tableData.cols; i++) {
-              tableHtml += '<th style="border: 1px solid #ddd; padding: 12px 8px; background-color: #f8f9fa; font-weight: bold; text-align: left;">Header ' + (i + 1) + '</th>';
+              tableHtml += '<th>Header ' + (i + 1) + '</th>';
             }
             tableHtml += '</tr></thead>';
           }
@@ -306,7 +311,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ onCommand }) => {
           for (let i = startRow; i < tableData.rows; i++) {
             tableHtml += '<tr>';
             for (let j = 0; j < tableData.cols; j++) {
-              tableHtml += '<td style="border: 1px solid #ddd; padding: 12px 8px;">Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
+              tableHtml += '<td>Cell ' + (i + 1) + '-' + (j + 1) + '</td>';
             }
             tableHtml += '</tr>';
           }
