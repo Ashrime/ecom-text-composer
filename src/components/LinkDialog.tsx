@@ -7,14 +7,15 @@ interface LinkDialogProps {
   onClose: () => void;
   onInsert: (linkData: {
     url: string;
-    selectedText: string;
+    title?: string;
     openInNewTab: boolean;
   }) => void;
 }
 
 const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) => {
   const [url, setUrl] = useState('');
-  const [openInNewTab, setOpenInNewTab] = useState(true);
+  const [title, setTitle] = useState('');
+  const [openInNewTab, setOpenInNewTab] = useState(false);
   const [selectedText, setSelectedText] = useState('');
 
   useEffect(() => {
@@ -35,23 +36,25 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
       finalUrl = 'https://' + finalUrl;
     }
 
-    console.log('Inserting link with data:', { url: finalUrl, selectedText: selectedText.trim(), openInNewTab });
+    console.log('Inserting link with data:', { url: finalUrl, title: title.trim(), openInNewTab });
 
     onInsert({
       url: finalUrl,
-      selectedText: selectedText.trim(),
+      title: title.trim(),
       openInNewTab
     });
 
     // Reset form
     setUrl('');
-    setOpenInNewTab(true);
+    setTitle('');
+    setOpenInNewTab(false);
     onClose();
   };
 
   const handleClose = () => {
     setUrl('');
-    setOpenInNewTab(true);
+    setTitle('');
+    setOpenInNewTab(false);
     onClose();
   };
 
@@ -76,17 +79,6 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
               <p className="text-sm text-blue-800">
                 <strong>Selected text:</strong> "{selectedText}"
               </p>
-              <p className="text-xs text-blue-600 mt-1">
-                This text will become a clickable link
-              </p>
-            </div>
-          )}
-
-          {!selectedText && (
-            <div className="p-3 bg-yellow-50 rounded-md border border-yellow-200">
-              <p className="text-sm text-yellow-800">
-                Please select some text first to convert it into a link
-              </p>
             </div>
           )}
 
@@ -102,6 +94,20 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
               placeholder="https://example.com"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+              Title (Tooltip)
+            </label>
+            <input
+              id="title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Optional tooltip text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -129,10 +135,9 @@ const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, onClose, onInsert }) =>
             </button>
             <button
               type="submit"
-              disabled={!selectedText || !url.trim()}
-              className="px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-md transition-colors"
+              className="px-4 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-md transition-colors"
             >
-              Create Link
+              Insert Link
             </button>
           </div>
         </form>
