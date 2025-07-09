@@ -411,7 +411,7 @@ const RichTextEditor: React.FC = () => {
   }, [content]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto border border-gray-300 rounded-lg bg-white shadow-sm">
+    <div className="w-full max-w-5xl mx-auto border border-gray-300 rounded-lg bg-white shadow-sm">
       <EditorToolbar onCommand={executeCommand} />
       <div
         ref={editorRef}
